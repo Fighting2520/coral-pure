@@ -526,7 +526,6 @@ async function removeWatermark(inputPath, taskId) {
         '-preset ultrafast', // 使用最快的预设
         '-crf 28', // 降低质量以加快处理
         '-c:a copy',
-        '-t 30' // 限制输出视频长度为30秒（测试用）
       ])
       .output(outputPath)
       .on('start', (commandLine) => {
