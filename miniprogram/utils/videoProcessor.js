@@ -9,6 +9,17 @@ class VideoProcessor {
     this.maxFileSize = 100 * 1024 * 1024 // 100MB限制
     this.supportedFormats = ['mp4', 'mov', 'avi', 'mkv']
     this.tempFileExpiry = 24 * 60 * 60 * 1000 // 24小时自动清理
+    
+    // 检查是否为游客模式
+    this.isTouristMode = false
+    if (wx.getAccountInfoSync) {
+      try {
+        const accountInfo = wx.getAccountInfoSync()
+        this.isTouristMode = accountInfo.miniProgram.appId === 'touristappid'
+      } catch (e) {
+        console.warn('获取账号信息失败:', e)
+      }
+    }
   }
 
   /**
@@ -24,7 +35,13 @@ class VideoProcessor {
       // 2. 显示风险提示
       await this.showRiskWarning(videoInfo.platform)
 
-      // 3. 调用云函数处理
+      // 3. 检查是否为游客模式
+      if (this.isTouristMode) {
+        console.log('游客模式下，使用模拟数据')
+        return this.getMockProcessResult(videoInfo)
+      }
+
+      // 4. 调用云函数处理
       const result = await wx.cloud.callFunction({
         name: 'videoProcessor',
         data: {
@@ -34,12 +51,37 @@ class VideoProcessor {
         }
       })
 
-      // 4. 处理结果
+      // 5. 处理结果
       return this.handleProcessResult(result.result)
 
     } catch (error) {
       console.error('视频处理失败:', error)
+      
+      // 如果是游客模式下的云函数调用错误，返回模拟数据
+      if (this.isTouristMode && error.message && error.message.includes('operateWXData:fail')) {
+        console.log('游客模式下云函数调用失败，使用模拟数据')
+        return this.getMockProcessResult(videoInfo)
+      }
+      
       throw new Error(`处理失败: ${error.message}`)
+    }
+  }
+
+  /**
+   * 获取模拟处理结果（游客模式使用）
+   * @param {Object} videoInfo - 视频信息
+   * @returns {Object} 模拟结果
+   */
+  getMockProcessResult(videoInfo) {
+    return {
+      success: true,
+      downloadUrl: 'https://example.com/mock-video.mp4',
+      originalUrl: videoInfo.url,
+      processTime: '250ms',
+      fileSize: '5.2MB',
+      expiryTime: Date.now() + this.tempFileExpiry,
+      warning: '游客模式下无法实际处理视频，这是模拟数据。请部署到真实环境使用。',
+      isMockData: true
     }
   }
 
@@ -119,6 +161,16 @@ class VideoProcessor {
    */
   async getProgress(taskId) {
     try {
+      // 游客模式下返回模拟数据
+      if (this.isTouristMode) {
+        return { 
+          progress: 100, 
+          status: 'completed', 
+          message: '游客模式下无法获取实际进度',
+          isMockData: true
+        }
+      }
+      
       const result = await wx.cloud.callFunction({
         name: 'videoProcessor',
         data: {
@@ -130,6 +182,17 @@ class VideoProcessor {
       return result.result
     } catch (error) {
       console.error('获取进度失败:', error)
+      
+      // 如果是游客模式下的云函数调用错误，返回模拟数据
+      if (this.isTouristMode) {
+        return { 
+          progress: 100, 
+          status: 'completed', 
+          message: '游客模式下无法获取实际进度',
+          isMockData: true
+        }
+      }
+      
       return { progress: 0, status: 'error', message: error.message }
     }
   }
@@ -141,6 +204,16 @@ class VideoProcessor {
    */
   async downloadVideo(downloadUrl, filename = 'coral_pure_video.mp4') {
     try {
+      // 游客模式下提示
+      if (this.isTouristMode || downloadUrl.includes('example.com')) {
+        wx.showModal({
+          title: '游客模式提示',
+          content: '游客模式下无法下载视频，请部署到真实环境使用。',
+          showCancel: false
+        })
+        return
+      }
+      
       wx.showLoading({ title: '准备下载...' })
 
       // 下载文件到本地
@@ -184,6 +257,12 @@ class VideoProcessor {
    * 清理临时文件（定时任务）
    */
   async cleanupTempFiles() {
+    // 游客模式下跳过
+    if (this.isTouristMode) {
+      console.log('游客模式下跳过清理临时文件')
+      return
+    }
+    
     try {
       await wx.cloud.callFunction({
         name: 'videoProcessor',

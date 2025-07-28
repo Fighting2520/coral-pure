@@ -3,20 +3,14 @@
 
 /* 全局变量定义 */
 page {
-  --primary-color: #2196F3;
-  --secondary-color: #4CAF50;
-  --warning-color: #ff9800;
-  --danger-color: #f44336;
-  --text-color: #333333;
-  --text-secondary: #666666;
-  --background-color: #f5f5f5;
-  --card-background: rgba(255, 255, 255, 0.95);
-  --border-radius: 20rpx;
-  --box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.1);
+  background-color: #f5f5f5;
+  color: #333333;
+  font-size: 28rpx;
+  line-height: 1.5;
 }
 
 /* 全局重置 */
-* {
+view, text, button {
   box-sizing: border-box;
 }
 
@@ -28,11 +22,11 @@ page {
 
 /* 通用卡片样式 */
 .card {
-  background: var(--card-background);
-  border-radius: var(--border-radius);
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 20rpx;
   padding: 30rpx;
   margin-bottom: 30rpx;
-  box-shadow: var(--box-shadow);
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.1);
 }
 
 /* 通用按钮样式 */
@@ -40,49 +34,48 @@ page {
   border: none;
   border-radius: 15rpx;
   font-weight: bold;
-  transition: all 0.3s ease;
 }
 
 .btn-primary {
-  background: linear-gradient(45deg, var(--primary-color), #1976D2);
+  background: linear-gradient(45deg, #2196F3, #1976D2);
   color: white;
 }
 
 .btn-secondary {
-  background: linear-gradient(45deg, var(--secondary-color), #45a049);
+  background: linear-gradient(45deg, #4CAF50, #45a049);
   color: white;
 }
 
 .btn-warning {
-  background: linear-gradient(45deg, var(--warning-color), #f57c00);
+  background: linear-gradient(45deg, #ff9800, #f57c00);
   color: white;
 }
 
 .btn-danger {
-  background: linear-gradient(45deg, var(--danger-color), #d32f2f);
+  background: linear-gradient(45deg, #f44336, #d32f2f);
   color: white;
 }
 
 /* 风险等级样式 */
 .risk-high {
-  color: var(--danger-color);
+  color: #f44336;
   font-weight: bold;
 }
 
 .risk-medium {
-  color: var(--warning-color);
+  color: #ff9800;
   font-weight: bold;
 }
 
 .risk-low {
-  color: var(--secondary-color);
+  color: #4CAF50;
   font-weight: bold;
 }
 
 /* 免责声明样式 */
 .disclaimer {
   background: rgba(244, 67, 54, 0.1);
-  border: 2rpx solid var(--danger-color);
+  border: 2rpx solid #f44336;
   border-radius: 12rpx;
   padding: 20rpx;
   margin: 20rpx 0;
@@ -91,14 +84,14 @@ page {
 .disclaimer-title {
   font-size: 28rpx;
   font-weight: bold;
-  color: var(--danger-color);
+  color: #f44336;
   margin-bottom: 15rpx;
 }
 
 .disclaimer-content {
   font-size: 24rpx;
   line-height: 1.6;
-  color: var(--text-secondary);
+  color: #666666;
 }
 
 /* 加载动画 */
@@ -106,16 +99,6 @@ page {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10rpx;
-}
-
-.loading-icon {
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
 }
 
 /* 渐变背景 */
@@ -128,11 +111,11 @@ page {
 }
 
 /* 文本样式 */
-.text-primary { color: var(--primary-color); }
-.text-secondary { color: var(--text-secondary); }
-.text-warning { color: var(--warning-color); }
-.text-danger { color: var(--danger-color); }
-.text-success { color: var(--secondary-color); }
+.text-primary { color: #2196F3; }
+.text-secondary { color: #666666; }
+.text-warning { color: #ff9800; }
+.text-danger { color: #f44336; }
+.text-success { color: #4CAF50; }
 
 /* 工具类 */
 .text-center { text-align: center; }
@@ -150,15 +133,3 @@ page {
 .p-10 { padding: 10rpx; }
 .p-20 { padding: 20rpx; }
 .p-30 { padding: 30rpx; }
-
-/* 响应式设计 */
-@media screen and (max-width: 750rpx) {
-  .container {
-    padding: 15rpx;
-  }
-  
-  .card {
-    padding: 20rpx;
-    margin-bottom: 20rpx;
-  }
-}
