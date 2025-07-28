@@ -300,10 +300,12 @@ async function parseBilibiliUrl(url) {
         duration: videoData.duration,
         format: 'mp4',
         headers: {
-          'User-Agent': getRandomUserAgent(),
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
           'Referer': 'https://www.bilibili.com',
           'Origin': 'https://www.bilibili.com',
-          'Cookie': 'CURRENT_FNVAL=16;'
+          'Cookie': 'CURRENT_FNVAL=16;',
+          'Accept': '*/*',
+          'Range': 'bytes=0-'
         }
       }
     }
@@ -411,7 +413,7 @@ async function downloadVideo(videoInfo, taskId) {
 
   console.log(`视频URL: ${videoUrl.substring(0, 100)}...`);
   console.log('使用以下请求头:');
-  console.log(JSON.stringify(headers));
+  console.log(JSON.stringify(headers, null, 2));
 
   try {
     const response = await axios({
@@ -421,10 +423,18 @@ async function downloadVideo(videoInfo, taskId) {
       headers: headers,
       timeout: 60000, // 增加超时时间到60秒
       maxContentLength: CONFIG.MAX_FILE_SIZE,
-      maxRedirects: 5
+      maxRedirects: 5,
+      validateStatus: function (status) {
+        return status >= 200 && status < 500; // 接受所有2xx-4xx状态码
+      }
     });
 
     console.log(`下载响应状态码: ${response.status}`);
+
+    // 检查状态码，如果是403或其他错误状态码，抛出更明确的错误
+    if (response.status !== 200) {
+      throw new Error(`服务器拒绝请求: 状态码 ${response.status}`);
+    }
 
     const writer = fs.createWriteStream(filePath);
     response.data.pipe(writer);
