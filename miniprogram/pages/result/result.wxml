@@ -1,5 +1,11 @@
 <!-- 结果页面模板 -->
 <view class="container">
+  <!-- 游客模式提示 -->
+  <view class="tourist-warning" wx:if="{{isMockData || isTouristMode}}">
+    <view class="warning-icon">⚠️</view>
+    <view class="warning-text">游客模式：当前显示的是模拟数据，请部署到真实环境使用完整功能</view>
+  </view>
+
   <!-- 成功状态 -->
   <view class="success-header">
     <view class="success-icon">✅</view>
@@ -20,7 +26,7 @@
       </view>
       <view class="info-item">
         <view class="info-label">⏰ 剩余时间</view>
-        <view class="info-value warning">{{timeRemaining}}</view>
+        <view class="info-value warning">{{timeRemaining || '24小时'}}</view>
       </view>
     </view>
     
@@ -31,6 +37,9 @@
         • 文件将在24小时后自动删除，请及时下载
         • 仅供个人学习研究使用，严禁商业用途
         • 请确保您有权使用此视频内容
+        <block wx:if="{{isMockData || isTouristMode}}">
+        • 游客模式下无法实际下载视频
+        </block>
       </view>
     </view>
   </view>
@@ -40,9 +49,9 @@
     <!-- 主要操作 -->
     <view class="primary-actions">
       <button 
-        class="action-btn download-btn {{isDownloading ? 'loading' : ''}}"
+        class="action-btn download-btn {{isDownloading ? 'loading' : ''}} {{(isMockData || isTouristMode) ? 'disabled' : ''}}"
         bindtap="onDownloadClick"
-        disabled="{{isDownloading}}"
+        disabled="{{isDownloading || isMockData || isTouristMode}}"
       >
         <view wx:if="{{isDownloading}}" class="btn-loading">
           <view class="loading-icon">⏳</view>
@@ -54,7 +63,11 @@
         </view>
       </button>
 
-      <button class="action-btn preview-btn" bindtap="onPreviewClick">
+      <button 
+        class="action-btn preview-btn {{(isMockData || isTouristMode) ? 'disabled' : ''}}" 
+        bindtap="onPreviewClick"
+        disabled="{{isMockData || isTouristMode}}"
+      >
         <view class="btn-icon">👁️</view>
         <text>预览视频</text>
       </button>
@@ -62,7 +75,11 @@
 
     <!-- 次要操作 -->
     <view class="secondary-actions">
-      <button class="secondary-btn share-btn" bindtap="onShareClick">
+      <button 
+        class="secondary-btn share-btn {{(isMockData || isTouristMode) ? 'disabled' : ''}}" 
+        bindtap="onShareClick"
+        disabled="{{isMockData || isTouristMode}}"
+      >
         <view class="btn-icon">📤</view>
         <text>分享</text>
       </button>
@@ -101,6 +118,14 @@
       <view class="tech-item">• 微信云开发环境，数据安全可靠</view>
       <view class="tech-item">• 无商业API依赖，完全开源方案</view>
       <view class="tech-item">• 自动清理机制，保护用户隐私</view>
+    </view>
+  </view>
+  
+  <!-- 游客模式提示 -->
+  <view class="tourist-note" wx:if="{{isMockData || isTouristMode}}">
+    <view class="note-title">📝 游客模式说明</view>
+    <view class="note-content">
+      当前处于微信开发者工具的游客模式，无法使用云开发功能。请在正式环境中部署并配置云环境ID后使用完整功能。
     </view>
   </view>
 </view>
