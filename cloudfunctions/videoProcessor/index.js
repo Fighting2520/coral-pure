@@ -431,8 +431,8 @@ async function downloadVideo(videoInfo, taskId) {
 
     console.log(`下载响应状态码: ${response.status}`);
 
-    // 检查状态码，如果是403或其他错误状态码，抛出更明确的错误
-    if (response.status !== 200) {
+    // 检查状态码，接受200(成功)和206(部分内容)状态码
+    if (response.status !== 200 && response.status !== 206) {
       throw new Error(`服务器拒绝请求: 状态码 ${response.status}`);
     }
 
