@@ -16,7 +16,15 @@ cloud.init({
 })
 
 const db = cloud.database()
-const storage = cloud.storage()
+
+// 创建一个简单的测试函数
+exports.test = async () => {
+  return {
+    success: true,
+    message: "云函数环境测试成功",
+    sdkVersion: cloud.version || "未知"
+  }
+}
 
 // 配置常量
 const CONFIG = {
@@ -35,7 +43,7 @@ const CONFIG = {
  */
 exports.main = async (event, context) => {
   const { action } = event
-  
+
   try {
     switch (action) {
       case 'process':
@@ -44,6 +52,34 @@ exports.main = async (event, context) => {
         return await getProgress(event)
       case 'cleanup':
         return await cleanupExpiredFiles(event)
+      case 'test':
+        // 简单测试函数，用于验证云函数环境
+        return {
+          success: true,
+          message: "云函数环境测试成功",
+          sdkVersion: cloud.version || "未知",
+          timestamp: Date.now(),
+          event: event
+        }
+      case 'testBilibili':
+        // 测试B站视频解析
+        if (!event.url) {
+          return { success: false, error: "缺少视频链接" }
+        }
+        try {
+          const videoUrl = await parseBilibiliUrl(event.url)
+          return {
+            success: true,
+            videoUrl: videoUrl,
+            message: "B站视频解析成功"
+          }
+        } catch (error) {
+          return {
+            success: false,
+            error: error.message,
+            message: "B站视频解析失败"
+          }
+        }
       default:
         throw new Error(`不支持的操作: ${action}`)
     }
@@ -63,31 +99,31 @@ exports.main = async (event, context) => {
 async function processVideo(event) {
   const { videoInfo, timestamp } = event
   const taskId = generateTaskId(timestamp)
-  
+
   console.log(`开始处理视频任务: ${taskId}`)
-  
+
   try {
     // 1. 验证输入参数
     validateVideoInfo(videoInfo)
-    
+
     // 2. 解析视频真实地址
     const realUrl = await parseVideoUrl(videoInfo)
-    
+
     // 3. 下载视频文件
     const localPath = await downloadVideo(realUrl, taskId)
-    
+
     // 4. 检测和去除水印
     const processedPath = await removeWatermark(localPath, taskId)
-    
+
     // 5. 上传到云存储
     const cloudUrl = await uploadToCloud(processedPath, taskId)
-    
+
     // 6. 清理临时文件
     cleanupTempFiles([localPath, processedPath])
-    
+
     // 7. 记录任务信息（用于清理）
     await recordTask(taskId, cloudUrl, timestamp)
-    
+
     return {
       success: true,
       taskId: taskId,
@@ -97,7 +133,7 @@ async function processVideo(event) {
       fileSize: await getFileSize(processedPath),
       expiryTime: timestamp + (CONFIG.EXPIRY_HOURS * 60 * 60 * 1000)
     }
-    
+
   } catch (error) {
     console.error(`任务 ${taskId} 处理失败:`, error)
     throw error
@@ -112,11 +148,11 @@ function validateVideoInfo(videoInfo) {
   if (!videoInfo || !videoInfo.url) {
     throw new Error('缺少视频链接')
   }
-  
+
   if (!videoInfo.platform) {
     throw new Error('无法识别视频平台')
   }
-  
+
   // 合规性检查
   const riskPlatforms = ['douyin', 'kuaishou', 'tiktok']
   if (riskPlatforms.includes(videoInfo.platform)) {
@@ -131,9 +167,9 @@ function validateVideoInfo(videoInfo) {
  */
 async function parseVideoUrl(videoInfo) {
   const { platform, url } = videoInfo
-  
+
   console.log(`解析 ${platform} 平台链接: ${url}`)
-  
+
   try {
     switch (platform) {
       case 'bilibili':
@@ -159,15 +195,19 @@ async function parseVideoUrl(videoInfo) {
  * @returns {string} 视频地址
  */
 async function parseBilibiliUrl(url) {
-  // 提取BV号
+  // 提取BV号 - 支持带查询参数的链接
   const bvMatch = url.match(/BV[A-Za-z0-9]+/)
   if (!bvMatch) {
     throw new Error('无效的B站链接格式')
   }
-  
+
   const bvid = bvMatch[0]
   console.log(`解析B站视频: ${bvid}`)
-  
+
+  // 记录详细的调试信息
+  console.log(`完整链接: ${url}`)
+  console.log(`提取的BV号: ${bvid}`)
+
   try {
     // 调用B站API获取视频信息
     const response = await axios.get(`https://api.bilibili.com/x/web-interface/view`, {
@@ -178,15 +218,32 @@ async function parseBilibiliUrl(url) {
       },
       timeout: 10000
     })
-    
+
+    // 记录API响应
+    console.log(`B站API响应状态码: ${response.status}`)
+    console.log(`B站API响应code: ${response.data.code}`)
+
     if (response.data.code !== 0) {
-      throw new Error(`B站API错误: ${response.data.message}`)
+      throw new Error(`B站API错误: ${response.data.message || '未知错误'}`)
     }
-    
+
+    if (!response.data.data) {
+      throw new Error('B站API返回数据结构异常: 缺少data字段')
+    }
+
     const videoData = response.data.data
+    console.log(`视频标题: ${videoData.title}`)
+
+    if (!videoData.cid) {
+      throw new Error('B站API返回数据结构异常: 缺少cid字段')
+    }
+
     const cid = videoData.cid
-    
+    console.log(`获取到cid: ${cid}`)
+
     // 获取视频播放地址
+    console.log(`开始获取视频播放地址，bvid: ${bvid}, cid: ${cid}`)
+
     const playResponse = await axios.get(`https://api.bilibili.com/x/player/playurl`, {
       params: {
         bvid,
@@ -200,16 +257,40 @@ async function parseBilibiliUrl(url) {
       },
       timeout: 10000
     })
-    
+
+    // 记录播放地址API响应
+    console.log(`播放地址API响应状态码: ${playResponse.status}`)
+    console.log(`播放地址API响应code: ${playResponse.data.code}`)
+
     if (playResponse.data.code !== 0) {
-      throw new Error(`获取播放地址失败: ${playResponse.data.message}`)
+      throw new Error(`获取播放地址失败: ${playResponse.data.message || '未知错误'}`)
     }
-    
+
+    // 记录返回的数据结构
+    console.log(`播放地址API返回数据结构: ${JSON.stringify(playResponse.data).substring(0, 200)}...`)
+
+    // 安全地获取视频URL
+    if (!playResponse.data.data) {
+      throw new Error('无法获取视频地址，返回数据缺少data字段')
+    }
+
+    // 检查是否有durl字段
+    if (!playResponse.data.data.durl || !Array.isArray(playResponse.data.data.durl) || playResponse.data.data.durl.length === 0) {
+      // 尝试获取dash格式的视频地址
+      if (playResponse.data.data.dash && playResponse.data.data.dash.video && playResponse.data.data.dash.video.length > 0) {
+        const videoUrl = playResponse.data.data.dash.video[0].baseUrl
+        console.log(`B站视频解析成功(dash格式): ${videoUrl.substring(0, 50)}...`)
+        return videoUrl
+      } else {
+        throw new Error('无法获取视频地址，返回数据结构异常：既没有durl也没有dash字段')
+      }
+    }
+
     const videoUrl = playResponse.data.data.durl[0].url
-    console.log(`B站视频解析成功: ${videoUrl.substring(0, 50)}...`)
-    
+    console.log(`B站视频解析成功(durl格式): ${videoUrl.substring(0, 50)}...`)
+
     return videoUrl
-    
+
   } catch (error) {
     console.error('B站解析失败:', error)
     throw new Error(`B站视频解析失败: ${error.message}`)
@@ -223,7 +304,7 @@ async function parseBilibiliUrl(url) {
  */
 async function parseDouyinUrl(url) {
   console.warn('⚠️ 抖音解析 - 高风险操作，可能触发反爬虫机制')
-  
+
   // 这里应该实现抖音链接解析逻辑
   // 由于抖音有严格的反爬虫机制，实际实现需要更复杂的策略
   throw new Error('抖音解析功能暂未实现 - 风险过高')
@@ -236,7 +317,7 @@ async function parseDouyinUrl(url) {
  */
 async function parseKuaishouUrl(url) {
   console.warn('⚠️ 快手解析 - 高风险操作，可能违反平台协议')
-  
+
   // 快手解析逻辑
   throw new Error('快手解析功能暂未实现 - 风险过高')
 }
@@ -248,7 +329,7 @@ async function parseKuaishouUrl(url) {
  */
 async function parseTiktokUrl(url) {
   console.warn('⚠️ TikTok解析 - 高风险操作，海外平台访问不稳定')
-  
+
   // TikTok解析逻辑
   throw new Error('TikTok解析功能暂未实现 - 风险过高')
 }
@@ -262,9 +343,9 @@ async function parseTiktokUrl(url) {
 async function downloadVideo(videoUrl, taskId) {
   const fileName = `${taskId}_original.mp4`
   const filePath = path.join(CONFIG.TEMP_DIR, fileName)
-  
+
   console.log(`开始下载视频: ${fileName}`)
-  
+
   try {
     const response = await axios({
       method: 'GET',
@@ -277,10 +358,10 @@ async function downloadVideo(videoUrl, taskId) {
       timeout: 30000,
       maxContentLength: CONFIG.MAX_FILE_SIZE
     })
-    
+
     const writer = fs.createWriteStream(filePath)
     response.data.pipe(writer)
-    
+
     return new Promise((resolve, reject) => {
       writer.on('finish', () => {
         console.log(`视频下载完成: ${fileName}`)
@@ -288,7 +369,7 @@ async function downloadVideo(videoUrl, taskId) {
       })
       writer.on('error', reject)
     })
-    
+
   } catch (error) {
     console.error('视频下载失败:', error)
     throw new Error(`下载失败: ${error.message}`)
@@ -303,9 +384,9 @@ async function downloadVideo(videoUrl, taskId) {
  */
 async function removeWatermark(inputPath, taskId) {
   const outputPath = path.join(CONFIG.TEMP_DIR, `${taskId}_processed.mp4`)
-  
+
   console.log(`开始去除水印: ${taskId}`)
-  
+
   return new Promise((resolve, reject) => {
     // 使用FFmpeg去除水印
     // 这里使用简单的裁剪方式，实际应用中可能需要更复杂的算法
@@ -347,18 +428,22 @@ async function removeWatermark(inputPath, taskId) {
  */
 async function uploadToCloud(filePath, taskId) {
   const cloudPath = `processed/${taskId}.mp4`
-  
+
   console.log(`上传到云存储: ${cloudPath}`)
-  
+
   try {
-    const result = await storage.uploadFile({
+    // 读取文件内容
+    const fileContent = fs.readFileSync(filePath)
+
+    // 使用云函数API上传文件
+    const result = await cloud.uploadFile({
       cloudPath: cloudPath,
-      fileContent: fs.createReadStream(filePath)
+      fileContent: fileContent
     })
-    
+
     console.log(`上传成功: ${result.fileID}`)
     return result.fileID
-    
+
   } catch (error) {
     console.error('云存储上传失败:', error)
     throw new Error(`上传失败: ${error.message}`)
@@ -394,7 +479,7 @@ async function recordTask(taskId, cloudUrl, timestamp) {
  */
 async function cleanupExpiredFiles(event) {
   console.log('开始清理过期文件')
-  
+
   try {
     const now = new Date()
     const expiredTasks = await db.collection('tasks')
@@ -403,36 +488,36 @@ async function cleanupExpiredFiles(event) {
         status: 'completed'
       })
       .get()
-    
+
     let cleanedCount = 0
-    
+
     for (const task of expiredTasks.data) {
       try {
         // 删除云存储文件
-        await storage.deleteFile({
+        await cloud.deleteFile({
           fileList: [task.cloudUrl]
         })
-        
+
         // 更新任务状态
         await db.collection('tasks').doc(task._id).update({
           data: { status: 'cleaned' }
         })
-        
+
         cleanedCount++
         console.log(`清理文件: ${task.taskId}`)
-        
+
       } catch (error) {
         console.error(`清理文件失败 ${task.taskId}:`, error)
       }
     }
-    
+
     console.log(`清理完成，共清理 ${cleanedCount} 个文件`)
-    
+
     return {
       success: true,
       cleanedCount
     }
-    
+
   } catch (error) {
     console.error('清理过程失败:', error)
     return {
@@ -448,12 +533,12 @@ async function cleanupExpiredFiles(event) {
  */
 async function getProgress(event) {
   const { taskId } = event
-  
+
   try {
     const task = await db.collection('tasks')
       .where({ taskId })
       .get()
-    
+
     if (task.data.length === 0) {
       return {
         progress: 0,
@@ -461,14 +546,14 @@ async function getProgress(event) {
         message: '任务不存在'
       }
     }
-    
+
     const taskData = task.data[0]
     return {
       progress: taskData.status === 'completed' ? 100 : 50,
       status: taskData.status,
       message: '处理中...'
     }
-    
+
   } catch (error) {
     console.error('获取进度失败:', error)
     return {
@@ -522,13 +607,13 @@ async function getFileSize(filePath) {
   try {
     const stats = fs.statSync(filePath)
     const bytes = stats.size
-    
+
     if (bytes === 0) return '0 B'
-    
+
     const k = 1024
     const sizes = ['B', 'KB', 'MB', 'GB']
     const i = Math.floor(Math.log(bytes) / Math.log(k))
-    
+
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
   } catch (error) {
     return '未知大小'
