@@ -7,10 +7,19 @@ App({
     if (!wx.cloud) {
       console.error('请使用 2.2.3 或以上的基础库以使用云能力')
     } else {
-      wx.cloud.init({
-        env: '你的云开发环境ID', // 替换为实际的环境ID
-        traceUser: false, // 不追踪用户信息，保护隐私
-      })
+      try {
+        wx.cloud.init({
+          env: '你的云开发环境ID', // 替换为实际的环境ID
+          traceUser: false // 不追踪用户信息，保护隐私
+        })
+        console.log('云开发环境初始化成功')
+      } catch (error) {
+        console.error('云开发环境初始化失败:', error)
+        // 游客模式下提示用户
+        if (wx.getAccountInfoSync && wx.getAccountInfoSync().miniProgram.appId === 'touristappid') {
+          console.warn('游客模式下无法使用云开发功能，部分功能将不可用')
+        }
+      }
     }
     
     // 显示免责声明
