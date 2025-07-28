@@ -10,6 +10,10 @@ const ffmpeg = require('fluent-ffmpeg')
 const fs = require('fs')
 const path = require('path')
 
+// 设置FFmpeg路径（云函数层中的路径）
+ffmpeg.setFfmpegPath('/opt/bin/ffmpeg')
+ffmpeg.setFfprobePath('/opt/bin/ffprobe')
+
 // 初始化云开发
 cloud.init({
   env: cloud.DYNAMIC_CURRENT_ENV
@@ -67,10 +71,15 @@ exports.main = async (event, context) => {
           return { success: false, error: "缺少视频链接" }
         }
         try {
-          const videoUrl = await parseBilibiliUrl(event.url)
+          const videoData = await parseBilibiliUrl(event.url)
           return {
             success: true,
-            videoUrl: videoUrl,
+            videoData: {
+              url: videoData.url.substring(0, 100) + '...',
+              title: videoData.title,
+              format: videoData.format,
+              duration: videoData.duration
+            },
             message: "B站视频解析成功"
           }
         } catch (error) {
@@ -107,10 +116,10 @@ async function processVideo(event) {
     validateVideoInfo(videoInfo)
 
     // 2. 解析视频真实地址
-    const realUrl = await parseVideoUrl(videoInfo)
+    const videoData = await parseVideoUrl(videoInfo)
 
     // 3. 下载视频文件
-    const localPath = await downloadVideo(realUrl, taskId)
+    const localPath = await downloadVideo(videoData, taskId)
 
     // 4. 检测和去除水印
     const processedPath = await removeWatermark(localPath, taskId)
@@ -129,6 +138,7 @@ async function processVideo(event) {
       taskId: taskId,
       downloadUrl: cloudUrl,
       originalUrl: videoInfo.url,
+      title: videoData.title || '未知标题',
       processTime: `${Date.now() - timestamp}ms`,
       fileSize: await getFileSize(processedPath),
       expiryTime: timestamp + (CONFIG.EXPIRY_HOURS * 60 * 60 * 1000)
@@ -163,7 +173,7 @@ function validateVideoInfo(videoInfo) {
 /**
  * 解析视频真实地址
  * @param {Object} videoInfo - 视频信息
- * @returns {string} 真实视频地址
+ * @returns {Object} 视频详细信息，包含URL和请求头
  */
 async function parseVideoUrl(videoInfo) {
   const { platform, url } = videoInfo
@@ -192,7 +202,7 @@ async function parseVideoUrl(videoInfo) {
 /**
  * 解析B站视频链接
  * @param {string} url - B站链接
- * @returns {string} 视频地址
+ * @returns {Object} 视频信息对象
  */
 async function parseBilibiliUrl(url) {
   // 提取BV号 - 支持带查询参数的链接
@@ -244,16 +254,20 @@ async function parseBilibiliUrl(url) {
     // 获取视频播放地址
     console.log(`开始获取视频播放地址，bvid: ${bvid}, cid: ${cid}`)
 
-    const playResponse = await axios.get(`https://api.bilibili.com/x/player/playurl`, {
+    // 使用不同的API获取视频地址
+    const playResponse = await axios.get(`https://api.bilibili.com/x/player/wbi/playurl`, {
       params: {
         bvid,
         cid,
-        qn: 64, // 720P质量
-        fnval: 16
+        qn: 16, // 使用较低的清晰度，360P
+        fnval: 1,
+        fnver: 0,
+        fourk: 0
       },
       headers: {
         'User-Agent': getRandomUserAgent(),
-        'Referer': 'https://www.bilibili.com'
+        'Referer': 'https://www.bilibili.com',
+        'Origin': 'https://www.bilibili.com'
       },
       timeout: 10000
     })
@@ -275,21 +289,45 @@ async function parseBilibiliUrl(url) {
     }
 
     // 检查是否有durl字段
-    if (!playResponse.data.data.durl || !Array.isArray(playResponse.data.data.durl) || playResponse.data.data.durl.length === 0) {
-      // 尝试获取dash格式的视频地址
-      if (playResponse.data.data.dash && playResponse.data.data.dash.video && playResponse.data.data.dash.video.length > 0) {
-        const videoUrl = playResponse.data.data.dash.video[0].baseUrl
-        console.log(`B站视频解析成功(dash格式): ${videoUrl.substring(0, 50)}...`)
-        return videoUrl
-      } else {
-        throw new Error('无法获取视频地址，返回数据结构异常：既没有durl也没有dash字段')
+    if (playResponse.data.data.durl && Array.isArray(playResponse.data.data.durl) && playResponse.data.data.durl.length > 0) {
+      const videoUrl = playResponse.data.data.durl[0].url
+      console.log(`B站视频解析成功(durl格式): ${videoUrl.substring(0, 50)}...`)
+
+      // 返回视频信息对象
+      return {
+        url: videoUrl,
+        title: videoData.title,
+        duration: videoData.duration,
+        format: 'mp4',
+        headers: {
+          'User-Agent': getRandomUserAgent(),
+          'Referer': 'https://www.bilibili.com',
+          'Origin': 'https://www.bilibili.com',
+          'Cookie': 'CURRENT_FNVAL=16;'
+        }
       }
     }
+    // 尝试获取dash格式的视频地址
+    else if (playResponse.data.data.dash && playResponse.data.data.dash.video && playResponse.data.data.dash.video.length > 0) {
+      const videoUrl = playResponse.data.data.dash.video[0].baseUrl
+      console.log(`B站视频解析成功(dash格式): ${videoUrl.substring(0, 50)}...`)
 
-    const videoUrl = playResponse.data.data.durl[0].url
-    console.log(`B站视频解析成功(durl格式): ${videoUrl.substring(0, 50)}...`)
-
-    return videoUrl
+      // 返回视频信息对象
+      return {
+        url: videoUrl,
+        title: videoData.title,
+        duration: videoData.duration,
+        format: 'mp4',
+        headers: {
+          'User-Agent': getRandomUserAgent(),
+          'Referer': 'https://www.bilibili.com',
+          'Origin': 'https://www.bilibili.com',
+          'Cookie': 'CURRENT_FNVAL=16;'
+        }
+      }
+    } else {
+      throw new Error('无法获取视频地址，返回数据结构异常：既没有durl也没有dash字段')
+    }
 
   } catch (error) {
     console.error('B站解析失败:', error)
@@ -336,43 +374,91 @@ async function parseTiktokUrl(url) {
 
 /**
  * 下载视频文件
- * @param {string} videoUrl - 视频地址
+ * @param {Object} videoInfo - 视频信息对象，包含URL和请求头
  * @param {string} taskId - 任务ID
  * @returns {string} 本地文件路径
  */
-async function downloadVideo(videoUrl, taskId) {
+async function downloadVideo(videoInfo, taskId) {
   const fileName = `${taskId}_original.mp4`
   const filePath = path.join(CONFIG.TEMP_DIR, fileName)
 
   console.log(`开始下载视频: ${fileName}`)
+
+  // 确保videoInfo是对象格式
+  let videoUrl, headers;
+  if (typeof videoInfo === 'string') {
+    // 兼容旧版本，如果传入的是字符串URL
+    videoUrl = videoInfo;
+    headers = {
+      'User-Agent': getRandomUserAgent(),
+      'Referer': 'https://www.bilibili.com',
+      'Origin': 'https://www.bilibili.com',
+      'Accept': '*/*',
+      'Accept-Encoding': 'gzip, deflate, br',
+      'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+      'Range': 'bytes=0-'
+    };
+  } else {
+    // 新版本，使用对象格式
+    videoUrl = videoInfo.url;
+    headers = videoInfo.headers || {};
+
+    // 确保基本请求头存在
+    if (!headers['User-Agent']) headers['User-Agent'] = getRandomUserAgent();
+    if (!headers['Accept']) headers['Accept'] = '*/*';
+    if (!headers['Range']) headers['Range'] = 'bytes=0-';
+  }
+
+  console.log(`视频URL: ${videoUrl.substring(0, 100)}...`);
+  console.log('使用以下请求头:');
+  console.log(JSON.stringify(headers));
 
   try {
     const response = await axios({
       method: 'GET',
       url: videoUrl,
       responseType: 'stream',
-      headers: {
-        'User-Agent': getRandomUserAgent(),
-        'Referer': 'https://www.bilibili.com'
-      },
-      timeout: 30000,
-      maxContentLength: CONFIG.MAX_FILE_SIZE
-    })
+      headers: headers,
+      timeout: 60000, // 增加超时时间到60秒
+      maxContentLength: CONFIG.MAX_FILE_SIZE,
+      maxRedirects: 5
+    });
 
-    const writer = fs.createWriteStream(filePath)
-    response.data.pipe(writer)
+    console.log(`下载响应状态码: ${response.status}`);
+
+    const writer = fs.createWriteStream(filePath);
+    response.data.pipe(writer);
 
     return new Promise((resolve, reject) => {
       writer.on('finish', () => {
-        console.log(`视频下载完成: ${fileName}`)
-        resolve(filePath)
-      })
-      writer.on('error', reject)
-    })
+        console.log(`视频下载完成: ${fileName}`);
+        try {
+          // 检查文件大小确认下载成功
+          const stats = fs.statSync(filePath);
+          console.log(`下载文件大小: ${stats.size} 字节`);
+          if (stats.size > 0) {
+            resolve(filePath);
+          } else {
+            reject(new Error('下载文件大小为0，可能下载失败'));
+          }
+        } catch (err) {
+          console.error(`检查文件失败: ${err.message}`);
+          reject(err);
+        }
+      });
+      writer.on('error', (err) => {
+        console.error(`文件写入错误: ${err.message}`);
+        reject(err);
+      });
+    });
 
   } catch (error) {
-    console.error('视频下载失败:', error)
-    throw new Error(`下载失败: ${error.message}`)
+    console.error('视频下载失败:', error);
+    // 提供更详细的错误信息
+    const errorMsg = error.response
+      ? `下载失败: 状态码 ${error.response.status} - ${error.message}`
+      : `下载失败: ${error.message}`;
+    throw new Error(errorMsg);
   }
 }
 
@@ -387,6 +473,36 @@ async function removeWatermark(inputPath, taskId) {
 
   console.log(`开始去除水印: ${taskId}`)
 
+  // 设置FFmpeg路径（如果使用了层）
+  try {
+    const ffmpegPath = '/opt/bin/ffmpeg';
+    const ffprobePath = '/opt/bin/ffprobe';
+
+    if (fs.existsSync(ffmpegPath)) {
+      console.log(`使用FFmpeg路径: ${ffmpegPath}`);
+      ffmpeg.setFfmpegPath(ffmpegPath);
+    }
+
+    if (fs.existsSync(ffprobePath)) {
+      console.log(`使用FFprobe路径: ${ffprobePath}`);
+      ffmpeg.setFfprobePath(ffprobePath);
+    }
+  } catch (error) {
+    console.warn(`设置FFmpeg路径失败: ${error.message}`);
+  }
+
+  // 检查输入文件
+  try {
+    const stats = fs.statSync(inputPath);
+    console.log(`输入文件大小: ${stats.size} 字节`);
+    if (stats.size === 0) {
+      throw new Error('输入文件大小为0，无法处理');
+    }
+  } catch (error) {
+    console.error(`检查输入文件失败: ${error.message}`);
+    throw error;
+  }
+
   return new Promise((resolve, reject) => {
     // 使用FFmpeg去除水印
     // 这里使用简单的裁剪方式，实际应用中可能需要更复杂的算法
@@ -397,16 +513,21 @@ async function removeWatermark(inputPath, taskId) {
       ])
       .outputOptions([
         '-c:v libx264',
-        '-preset fast',
-        '-crf 23',
-        '-c:a copy'
+        '-preset ultrafast', // 使用最快的预设
+        '-crf 28', // 降低质量以加快处理
+        '-c:a copy',
+        '-t 30' // 限制输出视频长度为30秒（测试用）
       ])
       .output(outputPath)
       .on('start', (commandLine) => {
         console.log('FFmpeg命令:', commandLine)
       })
       .on('progress', (progress) => {
-        console.log(`处理进度: ${Math.round(progress.percent)}%`)
+        if (progress && progress.percent) {
+          console.log(`处理进度: ${Math.round(progress.percent)}%`)
+        } else {
+          console.log('处理中...')
+        }
       })
       .on('end', () => {
         console.log(`水印去除完成: ${taskId}`)
