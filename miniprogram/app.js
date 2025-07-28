@@ -1,6 +1,9 @@
 // CoralPure 珊瑚去水印 - 微信小程序主入口
 // 免责声明：本工具仅供技术学习使用，用户需自行承担法律责任
 
+// 导入环境变量
+import { ENV } from './.env.js'
+
 App({
   onLaunch() {
     // 初始化云开发环境
@@ -9,8 +12,8 @@ App({
     } else {
       try {
         wx.cloud.init({
-          env: '你的云开发环境ID', // 替换为实际的环境ID
-          traceUser: false // 不追踪用户信息，保护隐私
+          env: ENV.CLOUD_ENV_ID, // 从环境变量中获取云环境ID
+          traceUser: false, // 不追踪用户信息，保护隐私
         })
         console.log('云开发环境初始化成功')
       } catch (error) {
@@ -56,6 +59,10 @@ App({
       kuaishou: { name: '快手', risk: 'high' },
       bilibili: { name: 'B站', risk: 'medium' },
       tiktok: { name: 'TikTok', risk: 'high' }
-    }
+    },
+    // 应用版本
+    version: ENV.VERSION,
+    // 开发模式
+    devMode: ENV.DEV_MODE
   }
 })
