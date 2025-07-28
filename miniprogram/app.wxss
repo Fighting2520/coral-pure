@@ -1,0 +1,164 @@
+/**app.wxss**/
+/* 全局样式 - CoralPure 珊瑚去水印 */
+
+/* 全局变量定义 */
+page {
+  --primary-color: #2196F3;
+  --secondary-color: #4CAF50;
+  --warning-color: #ff9800;
+  --danger-color: #f44336;
+  --text-color: #333333;
+  --text-secondary: #666666;
+  --background-color: #f5f5f5;
+  --card-background: rgba(255, 255, 255, 0.95);
+  --border-radius: 20rpx;
+  --box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.1);
+}
+
+/* 全局重置 */
+* {
+  box-sizing: border-box;
+}
+
+/* 通用容器 */
+.container {
+  min-height: 100vh;
+  padding: 20rpx;
+}
+
+/* 通用卡片样式 */
+.card {
+  background: var(--card-background);
+  border-radius: var(--border-radius);
+  padding: 30rpx;
+  margin-bottom: 30rpx;
+  box-shadow: var(--box-shadow);
+}
+
+/* 通用按钮样式 */
+.btn {
+  border: none;
+  border-radius: 15rpx;
+  font-weight: bold;
+  transition: all 0.3s ease;
+}
+
+.btn-primary {
+  background: linear-gradient(45deg, var(--primary-color), #1976D2);
+  color: white;
+}
+
+.btn-secondary {
+  background: linear-gradient(45deg, var(--secondary-color), #45a049);
+  color: white;
+}
+
+.btn-warning {
+  background: linear-gradient(45deg, var(--warning-color), #f57c00);
+  color: white;
+}
+
+.btn-danger {
+  background: linear-gradient(45deg, var(--danger-color), #d32f2f);
+  color: white;
+}
+
+/* 风险等级样式 */
+.risk-high {
+  color: var(--danger-color);
+  font-weight: bold;
+}
+
+.risk-medium {
+  color: var(--warning-color);
+  font-weight: bold;
+}
+
+.risk-low {
+  color: var(--secondary-color);
+  font-weight: bold;
+}
+
+/* 免责声明样式 */
+.disclaimer {
+  background: rgba(244, 67, 54, 0.1);
+  border: 2rpx solid var(--danger-color);
+  border-radius: 12rpx;
+  padding: 20rpx;
+  margin: 20rpx 0;
+}
+
+.disclaimer-title {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: var(--danger-color);
+  margin-bottom: 15rpx;
+}
+
+.disclaimer-content {
+  font-size: 24rpx;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+/* 加载动画 */
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10rpx;
+}
+
+.loading-icon {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* 渐变背景 */
+.gradient-bg {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.gradient-bg-success {
+  background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+}
+
+/* 文本样式 */
+.text-primary { color: var(--primary-color); }
+.text-secondary { color: var(--text-secondary); }
+.text-warning { color: var(--warning-color); }
+.text-danger { color: var(--danger-color); }
+.text-success { color: var(--secondary-color); }
+
+/* 工具类 */
+.text-center { text-align: center; }
+.text-left { text-align: left; }
+.text-right { text-align: right; }
+
+.mb-10 { margin-bottom: 10rpx; }
+.mb-20 { margin-bottom: 20rpx; }
+.mb-30 { margin-bottom: 30rpx; }
+
+.mt-10 { margin-top: 10rpx; }
+.mt-20 { margin-top: 20rpx; }
+.mt-30 { margin-top: 30rpx; }
+
+.p-10 { padding: 10rpx; }
+.p-20 { padding: 20rpx; }
+.p-30 { padding: 30rpx; }
+
+/* 响应式设计 */
+@media screen and (max-width: 750rpx) {
+  .container {
+    padding: 15rpx;
+  }
+  
+  .card {
+    padding: 20rpx;
+    margin-bottom: 20rpx;
+  }
+}

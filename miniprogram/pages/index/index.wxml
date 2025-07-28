@@ -1,0 +1,105 @@
+<!-- 主页面模板 - 视频链接输入界面 -->
+<view class="container">
+  <!-- 头部标题区域 -->
+  <view class="header">
+    <view class="title">🪸 珊瑚去水印</view>
+    <view class="subtitle">仅供技术学习研究使用</view>
+  </view>
+
+  <!-- 免责声明卡片 -->
+  <view class="disclaimer-card">
+    <view class="disclaimer-title">⚠️ 重要声明</view>
+    <view class="disclaimer-content">
+      • 本工具仅供技术学习和研究使用
+      • 严禁用于商业用途或侵犯版权
+      • 用户需自行承担使用风险和法律责任
+      • 建议在使用前获得原作者授权
+    </view>
+  </view>
+
+  <!-- 输入区域 -->
+  <view class="input-section">
+    <view class="input-label">📎 粘贴视频链接</view>
+    <view class="input-container">
+      <input 
+        class="url-input" 
+        placeholder="支持抖音、快手、B站、TikTok链接"
+        value="{{inputUrl}}"
+        bindinput="onInputChange"
+        maxlength="500"
+      />
+      <view class="input-actions">
+        <button class="action-btn paste-btn" bindtap="onPasteClick">粘贴</button>
+        <button class="action-btn clear-btn" bindtap="onClearClick">清空</button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 平台识别和风险提示 -->
+  <view class="risk-panel" wx:if="{{showRiskPanel}}">
+    <view class="platform-info">
+      <view class="platform-name">🎯 识别平台：{{currentPlatform.name}}</view>
+      <view class="risk-level" style="color: {{riskInfo.color}}">
+        风险等级：{{riskInfo.level}}
+      </view>
+    </view>
+    <view class="risk-message">{{riskInfo.message}}</view>
+    <view class="risk-suggestions">
+      <view class="suggestion-title">💡 建议：</view>
+      <view class="suggestion-item" wx:for="{{riskInfo.suggestions}}" wx:key="index">
+        • {{item}}
+      </view>
+    </view>
+  </view>
+
+  <!-- 支持平台展示 -->
+  <view class="platform-section">
+    <view class="section-title" bindtap="onPlatformInfoClick">
+      🎯 支持平台 <text class="info-icon">ℹ️</text>
+    </view>
+    <view class="platform-grid">
+      <view 
+        class="platform-item {{item.risk}}-risk" 
+        wx:for="{{supportedPlatforms}}" 
+        wx:key="key"
+      >
+        <view class="platform-icon">{{item.icon}}</view>
+        <view class="platform-name">{{item.name}}</view>
+        <view class="platform-risk">{{item.risk === 'high' ? '高风险' : item.risk === 'medium' ? '中风险' : '低风险'}}</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 处理按钮 -->
+  <view class="action-section">
+    <button 
+      class="process-btn {{isProcessing ? 'processing' : ''}}"
+      bindtap="onProcessClick"
+      disabled="{{isProcessing || !inputUrl}}"
+    >
+      <view wx:if="{{isProcessing}}" class="processing-content">
+        <view class="loading-icon">⏳</view>
+        <view>处理中... {{progress}}%</view>
+      </view>
+      <view wx:else>🚀 开始去水印</view>
+    </button>
+  </view>
+
+  <!-- 使用说明 -->
+  <view class="usage-tips">
+    <view class="tips-title">📋 使用说明</view>
+    <view class="tips-content">
+      <view class="tip-item">1. 复制视频分享链接到上方输入框</view>
+      <view class="tip-item">2. 系统会自动识别平台并显示风险提示</view>
+      <view class="tip-item">3. 点击"开始去水印"进行处理</view>
+      <view class="tip-item">4. 处理完成后可下载无水印视频</view>
+      <view class="tip-item warning">⚠️ 文件将在24小时后自动删除</view>
+    </view>
+  </view>
+
+  <!-- 底部版权信息 -->
+  <view class="footer">
+    <view class="copyright">© 2025 CoralPure 开源项目</view>
+    <view class="tech-info">基于微信云开发 + FFmpeg</view>
+  </view>
+</view>

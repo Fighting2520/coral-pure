@@ -1,0 +1,132 @@
+<!-- 结果页面模板 -->
+<view class="container">
+  <!-- 成功状态 -->
+  <view class="success-header">
+    <view class="success-icon">✅</view>
+    <view class="success-title">处理完成</view>
+    <view class="success-subtitle">视频水印已成功去除</view>
+  </view>
+
+  <!-- 结果信息卡片 -->
+  <view class="result-card">
+    <view class="result-info">
+      <view class="info-item">
+        <view class="info-label">📁 文件大小</view>
+        <view class="info-value">{{result.fileSize || '未知'}}</view>
+      </view>
+      <view class="info-item">
+        <view class="info-label">⏱️ 处理耗时</view>
+        <view class="info-value">{{result.processTime || '未知'}}</view>
+      </view>
+      <view class="info-item">
+        <view class="info-label">⏰ 剩余时间</view>
+        <view class="info-value warning">{{timeRemaining}}</view>
+      </view>
+    </view>
+    
+    <!-- 重要提醒 -->
+    <view class="warning-box">
+      <view class="warning-title">⚠️ 重要提醒</view>
+      <view class="warning-content">
+        • 文件将在24小时后自动删除，请及时下载
+        • 仅供个人学习研究使用，严禁商业用途
+        • 请确保您有权使用此视频内容
+      </view>
+    </view>
+  </view>
+
+  <!-- 操作按钮区域 -->
+  <view class="action-section">
+    <!-- 主要操作 -->
+    <view class="primary-actions">
+      <button 
+        class="action-btn download-btn {{isDownloading ? 'loading' : ''}}"
+        bindtap="onDownloadClick"
+        disabled="{{isDownloading}}"
+      >
+        <view wx:if="{{isDownloading}}" class="btn-loading">
+          <view class="loading-icon">⏳</view>
+          <text>下载中...</text>
+        </view>
+        <view wx:else>
+          <view class="btn-icon">📥</view>
+          <text>下载到相册</text>
+        </view>
+      </button>
+
+      <button class="action-btn preview-btn" bindtap="onPreviewClick">
+        <view class="btn-icon">👁️</view>
+        <text>预览视频</text>
+      </button>
+    </view>
+
+    <!-- 次要操作 -->
+    <view class="secondary-actions">
+      <button class="secondary-btn share-btn" bindtap="onShareClick">
+        <view class="btn-icon">📤</view>
+        <text>分享</text>
+      </button>
+      
+      <button class="secondary-btn home-btn" bindtap="onBackHomeClick">
+        <view class="btn-icon">🏠</view>
+        <text>返回首页</text>
+      </button>
+    </view>
+  </view>
+
+  <!-- 使用统计 -->
+  <view class="stats-section">
+    <view class="stats-title">📊 本次处理统计</view>
+    <view class="stats-grid">
+      <view class="stat-item">
+        <view class="stat-value">1</view>
+        <view class="stat-label">处理文件</view>
+      </view>
+      <view class="stat-item">
+        <view class="stat-value">100%</view>
+        <view class="stat-label">成功率</view>
+      </view>
+      <view class="stat-item">
+        <view class="stat-value">0</view>
+        <view class="stat-label">存储日志</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 技术说明 -->
+  <view class="tech-info">
+    <view class="tech-title">🔧 技术实现</view>
+    <view class="tech-content">
+      <view class="tech-item">• 基于开源FFmpeg库进行视频处理</view>
+      <view class="tech-item">• 微信云开发环境，数据安全可靠</view>
+      <view class="tech-item">• 无商业API依赖，完全开源方案</view>
+      <view class="tech-item">• 自动清理机制，保护用户隐私</view>
+    </view>
+  </view>
+</view>
+
+<!-- 分享弹窗 -->
+<view class="share-modal {{showShareModal ? 'show' : ''}}" bindtap="onCloseShareModal">
+  <view class="share-content" catchtap="">
+    <view class="share-header">
+      <view class="share-title">📤 分享选项</view>
+      <view class="close-btn" bindtap="onCloseShareModal">✕</view>
+    </view>
+    
+    <view class="share-options">
+      <button class="share-option" open-type="share">
+        <view class="option-icon">💬</view>
+        <view class="option-text">分享给好友</view>
+      </button>
+      
+      <button class="share-option" bindtap="onCopyLinkClick">
+        <view class="option-icon">🔗</view>
+        <view class="option-text">复制链接</view>
+      </button>
+    </view>
+    
+    <view class="share-warning">
+      <text>⚠️ 分享链接24小时后失效</text>
+    </view>
+  </view>
+</view>

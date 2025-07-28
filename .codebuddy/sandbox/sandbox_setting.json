@@ -1,0 +1,20 @@
+{
+  "path": "/Users/wangjunkang/data/code/web/farmer-wang/coral-pure",
+  "desc": "这是一个微信小程序项目 - 珊瑚去水印工具，支持抖音、快手、B站、TikTok等平台的视频去水印功能。基于微信云开发 + FFmpeg技术栈，包含完整的前端界面、云函数后端逻辑和风险提示系统。",
+  "id": "6c17b1c606bd4863856e9ce002fd3045",
+  "data": {
+    "spaceKey": "6c17b1c606bd4863856e9ce002fd3045",
+    "connections": {
+      "webIDE": "https://6c17b1c606bd4863856e9ce002fd3045.ap-singapore.cloudstudio.club",
+      "preview": "https://6c17b1c606bd4863856e9ce002fd3045--{port}.ap-singapore.cloudstudio.club",
+      "api": "https://6c17b1c606bd4863856e9ce002fd3045--api.ap-singapore.cloudstudio.club",
+      "pty": "https://6c17b1c606bd4863856e9ce002fd3045--pty.ap-singapore.cloudstudio.club"
+    }
+  },
+  "config": {
+    "api": "https://6c17b1c606bd4863856e9ce002fd3045--api.ap-singapore.cloudstudio.club",
+    "pty": "https://6c17b1c606bd4863856e9ce002fd3045--pty.ap-singapore.cloudstudio.club",
+    "region": "ap-shanghai",
+    "spaceKey": "6c17b1c606bd4863856e9ce002fd3045"
+  }
+}

@@ -1,0 +1,130 @@
+<!-- 关于页面模板 -->
+<view class="container">
+  <!-- 应用信息头部 -->
+  <view class="app-header">
+    <view class="app-icon">🪸</view>
+    <view class="app-name">珊瑚去水印</view>
+    <view class="app-version">v{{version}}</view>
+    <view class="app-desc">开源免费的视频去水印工具</view>
+  </view>
+
+  <!-- 重要声明 -->
+  <view class="disclaimer-section">
+    <view class="section-title">⚠️ 重要声明</view>
+    <view class="disclaimer-content">
+      <view class="disclaimer-item">🎓 仅供技术学习和研究使用</view>
+      <view class="disclaimer-item">🚫 严禁用于商业用途或侵犯版权</view>
+      <view class="disclaimer-item">⚖️ 用户需自行承担法律责任</view>
+      <view class="disclaimer-item">✋ 建议获得原作者授权后使用</view>
+    </view>
+    <button class="disclaimer-btn" bindtap="onDisclaimerClick">
+      查看完整免责声明
+    </button>
+  </view>
+
+  <!-- 功能特性 -->
+  <view class="features-section">
+    <view class="section-title">✨ 功能特性</view>
+    <view class="features-grid">
+      <view class="feature-item" wx:for="{{features}}" wx:key="title">
+        <view class="feature-icon">{{item.icon}}</view>
+        <view class="feature-title">{{item.title}}</view>
+        <view class="feature-desc">{{item.desc}}</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 风险提示 -->
+  <view class="risks-section">
+    <view class="section-title">🚨 风险提示</view>
+    <view class="risks-list">
+      <view class="risk-item {{item.level}}-risk" wx:for="{{risks}}" wx:key="title">
+        <view class="risk-level">{{item.level === 'high' ? '高风险' : '中风险'}}</view>
+        <view class="risk-content">
+          <view class="risk-title">{{item.title}}</view>
+          <view class="risk-desc">{{item.desc}}</view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 技术栈 -->
+  <view class="tech-section">
+    <view class="section-title">🔧 技术栈</view>
+    <view class="tech-list">
+      <view class="tech-item" wx:for="{{techStack}}" wx:key="name">
+        <view class="tech-name">{{item.name}}</view>
+        <view class="tech-version">{{item.version}}</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 操作按钮 -->
+  <view class="actions-section">
+    <view class="action-row">
+      <button class="action-btn primary" bindtap="onUpdateClick">
+        <view class="btn-icon">🔄</view>
+        <text>检查更新</text>
+      </button>
+      <button class="action-btn secondary" bindtap="onStatsClick">
+        <view class="btn-icon">📊</view>
+        <text>使用统计</text>
+      </button>
+    </view>
+    
+    <view class="action-row">
+      <button class="action-btn secondary" bindtap="onLicenseClick">
+        <view class="btn-icon">📄</view>
+        <text>开源协议</text>
+      </button>
+      <button class="action-btn secondary" bindtap="onContactClick">
+        <view class="btn-icon">📧</view>
+        <text>联系我们</text>
+      </button>
+    </view>
+  </view>
+
+  <!-- 隐私保护说明 -->
+  <view class="privacy-section">
+    <view class="section-title">🔒 隐私保护</view>
+    <view class="privacy-content">
+      <view class="privacy-item">
+        <view class="privacy-icon">🚫</view>
+        <view class="privacy-text">不收集任何个人信息</view>
+      </view>
+      <view class="privacy-item">
+        <view class="privacy-icon">🗑️</view>
+        <view class="privacy-text">文件24小时自动清理</view>
+      </view>
+      <view class="privacy-item">
+        <view class="privacy-icon">🔐</view>
+        <view class="privacy-text">所有处理完全匿名化</view>
+      </view>
+      <view class="privacy-item">
+        <view class="privacy-icon">📝</view>
+        <view class="privacy-text">不记录用户操作日志</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 开源信息 -->
+  <view class="opensource-section">
+    <view class="section-title">💻 开源项目</view>
+    <view class="opensource-content">
+      <view class="opensource-text">
+        本项目完全开源，遵循MIT协议。欢迎查看源码、提交Issue或贡献代码。
+      </view>
+      <view class="github-info">
+        <view class="github-text">GitHub: coral-pure</view>
+        <view class="build-info">构建时间: {{buildTime}}</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 底部信息 -->
+  <view class="footer">
+    <view class="footer-text">© 2025 CoralPure 开源项目</view>
+    <view class="footer-text">基于微信云开发构建</view>
+    <view class="footer-warning">⚠️ 请合法合规使用本工具</view>
+  </view>
+</view>
