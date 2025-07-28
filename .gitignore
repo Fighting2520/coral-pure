@@ -1,12 +1,9 @@
-# 微信小程序
+# 依赖包
 miniprogram_npm/
 node_modules/
-
-# 云函数
 cloudfunctions/**/node_modules/
-cloudfunctions/**/.env
 
-# 开发工具
+# 编辑器配置
 .vscode/
 .idea/
 
@@ -24,22 +21,19 @@ yarn-error.log*
 *.tmp
 *.temp
 .cache/
-
-# 构建输出
 dist/
 build/
 
-# 环境配置
+# 环境变量
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+miniprogram/.env.js
 
-# 微信开发者工具
+# 项目配置
 project.private.config.json
-
-# 云开发相关
 cloudfunctions/**/package-lock.json
 
 # 测试文件
@@ -49,8 +43,6 @@ coverage/
 # 备份文件
 *.bak
 *.backup
-
-# 文档草稿
 *.draft.md
 
 # 敏感信息
@@ -58,6 +50,6 @@ config/secrets.js
 keys/
 certificates/
 
-# CloudStudio 部署忽略
+# 部署文件
 .cloudstudio/
 deploy/
