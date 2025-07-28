@@ -19,15 +19,11 @@
     "list": [
       {
         "pagePath": "pages/index/index",
-        "text": "去水印",
-        "iconPath": "images/video.png",
-        "selectedIconPath": "images/video-active.png"
+        "text": "去水印"
       },
       {
         "pagePath": "pages/about/about",
-        "text": "关于",
-        "iconPath": "images/info.png",
-        "selectedIconPath": "images/info-active.png"
+        "text": "关于"
       }
     ]
   },
