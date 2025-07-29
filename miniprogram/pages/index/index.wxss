@@ -185,26 +185,12 @@
   margin-bottom: 5rpx;
 }
 
-.platform-risk {
-  font-size: 20rpx;
-  padding: 4rpx 10rpx;
-  border-radius: 10rpx;
-  display: inline-block;
-}
-
-.platform-risk.high {
-  background: rgba(244, 67, 54, 0.1);
-  color: #f44336;
-}
-
-.platform-risk.medium {
-  background: rgba(255, 152, 0, 0.1);
-  color: #ff9800;
-}
-
-.platform-risk.low {
-  background: rgba(76, 175, 80, 0.1);
-  color: #4CAF50;
+.platform-risk-note {
+  font-size: 22rpx;
+  color: #666;
+  text-align: center;
+  margin-top: 20rpx;
+  padding: 10rpx;
 }
 
 /* 使用说明 */

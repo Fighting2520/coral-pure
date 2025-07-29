@@ -60,13 +60,9 @@
           <text wx:else>🎬</text>
         </view>
         <view class="platform-name">{{item.name}}</view>
-        <view class="platform-risk {{item.risk}}">
-          <text wx:if="{{item.risk === 'high'}}">高风险</text>
-          <text wx:elif="{{item.risk === 'medium'}}">中风险</text>
-          <text wx:else>低风险</text>
-        </view>
       </view>
     </view>
+    <view class="platform-risk-note">注意：部分平台存在内容合规风险，请遵守相关平台规定</view>
   </view>
 
   <!-- 使用说明 -->
