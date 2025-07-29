@@ -9,7 +9,7 @@ class PlatformParser {
     // 平台正则表达式配置
     this.patterns = {
       douyin: {
-        regex: /(?:douyin\.com|iesdouyin\.com)\/share\/video\/(\d+)/,
+        regex: /(?:douyin\.com|iesdouyin\.com)\/(?:share\/video\/|video\/|note\/)(\d+)/,
         shortRegex: /v\.douyin\.com\/[A-Za-z0-9]+/,
         name: '抖音',
         riskLevel: 'high'
@@ -134,15 +134,30 @@ class PlatformParser {
    * @returns {string} 清理后的链接
    */
   cleanUrl(url) {
+    // 处理抖音特殊分享格式
+    if (url.includes('复制打开抖音') && url.includes('v.douyin.com')) {
+      // 提取抖音短链接
+      const douyinMatch = url.match(/(https?:\/\/v\.douyin\.com\/[A-Za-z0-9]+\/)/i);
+      if (douyinMatch && douyinMatch[1]) {
+        return douyinMatch[1];
+      }
+      
+      // 尝试其他格式匹配
+      const altMatch = url.match(/v\.douyin\.com\/[A-Za-z0-9]+/i);
+      if (altMatch) {
+        return `https://${altMatch[0]}/`;
+      }
+    }
+    
     // 移除多余的空格和换行
-    let cleaned = url.trim().replace(/\s+/g, '')
+    let cleaned = url.trim().replace(/\s+/g, '');
     
     // 确保有协议头
     if (!cleaned.startsWith('http')) {
-      cleaned = 'https://' + cleaned
+      cleaned = 'https://' + cleaned;
     }
 
-    return cleaned
+    return cleaned;
   }
 
   /**
@@ -174,22 +189,36 @@ class PlatformParser {
       const response = await new Promise((resolve, reject) => {
         wx.request({
           url: shortUrl,
-          method: 'HEAD',
+          method: 'GET', // 使用GET而不是HEAD，因为某些平台可能不支持HEAD请求
           success: (res) => {
+            // 检查重定向
             if (res.statusCode === 302 || res.statusCode === 301) {
               resolve(res.header.Location || res.header.location)
+            } 
+            // 如果没有重定向但返回了内容，尝试从内容中提取URL
+            else if (res.data && typeof res.data === 'string') {
+              // 尝试从HTML中提取重定向URL
+              const urlMatch = res.data.match(/href=["'](https?:\/\/[^"']+)["']/i);
+              if (urlMatch && urlMatch[1]) {
+                resolve(urlMatch[1]);
+              } else {
+                resolve(shortUrl); // 无法提取，返回原始链接
+              }
             } else {
-              reject(new Error('短链接展开失败'))
+              resolve(shortUrl); // 无法处理，返回原始链接
             }
           },
-          fail: reject
+          fail: (err) => {
+            console.error('短链接请求失败:', err);
+            resolve(shortUrl); // 失败时返回原始链接，而不是拒绝Promise
+          }
         })
-      })
+      });
       
-      return response || shortUrl
+      return response || shortUrl;
     } catch (error) {
-      console.error('短链接展开失败:', error)
-      return shortUrl // 失败时返回原始链接
+      console.error('短链接展开失败:', error);
+      return shortUrl; // 失败时返回原始链接
     }
   }
 
@@ -205,12 +234,30 @@ class PlatformParser {
       throw new Error(`不支持的平台: ${platform}`)
     }
 
+    // 尝试使用配置的正则表达式匹配
     const match = url.match(config.regex)
     if (match && match[1]) {
       return match[1]
     }
+    
+    // 对于抖音，如果常规匹配失败，使用备用方法
+    if (platform === 'douyin') {
+      // 如果是短链接，可能无法直接提取ID，返回一个临时ID
+      if (url.includes('v.douyin.com')) {
+        return `douyin_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
+      }
+      
+      // 尝试其他可能的格式
+      const altMatch = url.match(/video\/(\d+)/i) || 
+                       url.match(/item\/(\d+)/i) ||
+                       url.match(/note\/(\d+)/i);
+      if (altMatch && altMatch[1]) {
+        return altMatch[1];
+      }
+    }
 
-    throw new Error('无法提取视频ID')
+    // 如果所有尝试都失败，但我们确定是该平台的链接，生成一个临时ID
+    return `${platform}_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
   }
 
   /**
