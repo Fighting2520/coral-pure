@@ -16,35 +16,68 @@
     <view class="subtitle">免费视频去水印工具</view>
   </view>
 
-  <!-- 输入区域 -->
-  <view class="input-section">
-    <view class="input-wrapper">
-      <input 
-        class="url-input" 
-        placeholder="粘贴视频分享链接" 
-        value="{{inputUrl}}"
-        bindinput="onInputChange"
-        focus
-      />
-      <view class="input-actions">
-        <view class="clear-btn" bindtap="onClearInput" wx:if="{{inputUrl}}">✕</view>
-        <view class="paste-btn" bindtap="onPasteClick">粘贴</view>
+  <!-- 功能选择区域 -->
+  <view class="function-section">
+    <view class="function-tabs">
+      <view class="tab-item {{activeTab === 'upload' ? 'active' : ''}}" bindtap="switchTab" data-tab="upload">
+        <text class="tab-icon">📁</text>
+        <text class="tab-text">上传视频</text>
+      </view>
+      <view class="tab-item {{activeTab === 'link' ? 'active' : ''}}" bindtap="switchTab" data-tab="link">
+        <text class="tab-icon">🔗</text>
+        <text class="tab-text">链接解析</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 上传视频区域 -->
+  <view class="upload-section" wx:if="{{activeTab === 'upload'}}">
+    <view class="upload-area" bindtap="chooseVideo">
+      <view class="upload-content" wx:if="{{!selectedVideo}}">
+        <view class="upload-icon">📹</view>
+        <view class="upload-text">点击选择视频文件</view>
+        <view class="upload-tips">支持MP4、MOV等格式，最大100MB，{{maxDurationText}}</view>
+      </view>
+      <view class="video-preview" wx:else>
+        <video class="preview-video" src="{{selectedVideo.tempFilePath}}" controls></video>
+        <view class="video-info">
+          <text class="video-name">{{selectedVideo.name}}</text>
+          <text class="video-size">{{selectedVideo.size}}</text>
+        </view>
       </view>
     </view>
     
+    <!-- 进度显示 -->
+    <view class="progress-section" wx:if="{{isProcessing}}">
+      <view class="progress-bar">
+        <view class="progress-fill" style="width: {{processProgress}}%"></view>
+      </view>
+      <view class="progress-text">{{progressText}} ({{processProgress}}%)</view>
+    </view>
+
     <button 
       class="process-btn {{isProcessing ? 'loading' : ''}}" 
-      bindtap="onProcessClick"
-      disabled="{{isProcessing}}"
+      bindtap="onProcessVideo"
+      disabled="{{isProcessing || !selectedVideo}}"
     >
       <block wx:if="{{isProcessing}}">
         <view class="loading-icon">⏳</view>
-        <text>处理中...</text>
+        <text>{{progressText || '处理中...'}}</text>
       </block>
       <block wx:else>
-        <text>去水印</text>
+        <text>开始去水印</text>
       </block>
     </button>
+  </view>
+
+  <!-- 链接解析区域 -->
+  <view class="link-section" wx:if="{{activeTab === 'link'}}">
+    <view class="coming-soon">
+      <view class="coming-icon">🚧</view>
+      <view class="coming-title">开发中，敬请期待</view>
+      <view class="coming-desc">链接解析功能正在开发中，由于各平台反爬虫机制，暂时无法提供稳定服务</view>
+      <view class="coming-note">目前推荐使用"上传视频"功能进行去水印处理</view>
+    </view>
   </view>
 
   <!-- 平台支持 -->
@@ -72,24 +105,24 @@
       <view class="guide-step">
         <view class="step-number">1</view>
         <view class="step-content">
-          <view class="step-title">复制链接</view>
-          <view class="step-desc">在短视频App中复制分享链接</view>
+          <view class="step-title">选择视频</view>
+          <view class="step-desc">点击上传区域选择本地视频文件</view>
         </view>
       </view>
       
       <view class="guide-step">
         <view class="step-number">2</view>
         <view class="step-content">
-          <view class="step-title">粘贴链接</view>
-          <view class="step-desc">点击"粘贴"按钮或手动粘贴</view>
+          <view class="step-title">开始处理</view>
+          <view class="step-desc">点击"开始去水印"按钮处理视频</view>
         </view>
       </view>
       
       <view class="guide-step">
         <view class="step-number">3</view>
         <view class="step-content">
-          <view class="step-title">去除水印</view>
-          <view class="step-desc">点击"去水印"按钮处理视频</view>
+          <view class="step-title">查看进度</view>
+          <view class="step-desc">实时查看处理进度和状态</view>
         </view>
       </view>
       
@@ -97,7 +130,7 @@
         <view class="step-number">4</view>
         <view class="step-content">
           <view class="step-title">保存视频</view>
-          <view class="step-desc">下载无水印视频到相册</view>
+          <view class="step-desc">下载处理后的无水印视频</view>
         </view>
       </view>
     </view>

@@ -18,7 +18,7 @@
     <view class="result-info">
       <view class="info-item">
         <view class="info-label">📁 文件大小</view>
-        <view class="info-value">{{result.fileSize || '未知'}}</view>
+        <view class="info-value">{{result.processedSize || result.originalSize || '未知'}}</view>
       </view>
       <view class="info-item">
         <view class="info-label">⏱️ 处理耗时</view>
