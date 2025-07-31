@@ -52,6 +52,10 @@ exports.main = async (event, context) => {
     switch (action) {
       case 'process':
         return await processVideo(event)
+      case 'processUploadedVideo':
+        return await processUploadedVideo(event)
+      case 'removeWatermark':
+        return await processVideo(event)
       case 'getProgress':
         return await getProgress(event)
       case 'cleanup':
@@ -107,7 +111,7 @@ exports.main = async (event, context) => {
  */
 async function processVideo(event) {
   const { videoInfo, timestamp } = event
-  const taskId = generateTaskId(timestamp)
+  const taskId = generateTaskId(timestamp || Date.now())
 
   console.log(`开始处理视频任务: ${taskId}`)
 
@@ -131,21 +135,84 @@ async function processVideo(event) {
     cleanupTempFiles([localPath, processedPath])
 
     // 7. 记录任务信息（用于清理）
+    await recordTask(taskId, cloudUrl, timestamp || Date.now())
+
+    return {
+      success: true,
+      taskId: taskId,
+      videoUrl: cloudUrl,
+      originalUrl: videoInfo.url,
+      title: videoData.title || '未知标题',
+      processTime: `${Date.now() - (timestamp || Date.now())}ms`,
+      fileSize: await getFileSize(processedPath),
+      expiryTime: (timestamp || Date.now()) + (CONFIG.EXPIRY_HOURS * 60 * 60 * 1000)
+    }
+
+  } catch (error) {
+    console.error(`任务 ${taskId} 处理失败:`, error)
+    throw error
+  }
+}
+
+/**
+ * 处理上传的视频文件
+ * @param {Object} event - 事件参数
+ */
+async function processUploadedVideo(event) {
+  const { fileId, fileName, fileSize } = event
+  const timestamp = Date.now()
+  const taskId = generateTaskId(timestamp)
+
+  console.log(`开始处理上传的视频: ${taskId}, 文件ID: ${fileId}`)
+
+  try {
+    // 1. 验证输入参数
+    if (!fileId) {
+      throw new Error('缺少文件ID')
+    }
+
+    // 2. 从云存储下载文件到临时目录
+    const localPath = await downloadFromCloud(fileId, taskId)
+
+    // 3. 检测和去除水印
+    const processedPath = await removeWatermark(localPath, taskId)
+
+    // 4. 上传处理后的文件到云存储
+    // 4. 获取处理后文件大小（在清理文件之前）
+    const processedSize = await getFileSize(processedPath)
+
+    // 5. 上传处理后的文件到云存储
+    const cloudUrl = await uploadToCloud(processedPath, taskId)
+
+    // 6. 清理临时文件
+    cleanupTempFiles([localPath, processedPath])
+
+    // 7. 删除原始上传文件（可选）
+    try {
+      await cloud.deleteFile({
+        fileList: [fileId]
+      })
+      console.log(`已删除原始上传文件: ${fileId}`)
+    } catch (deleteError) {
+      console.warn(`删除原始文件失败: ${deleteError.message}`)
+    }
+
+    // 8. 记录任务信息
     await recordTask(taskId, cloudUrl, timestamp)
 
     return {
       success: true,
       taskId: taskId,
-      downloadUrl: cloudUrl,
-      originalUrl: videoInfo.url,
-      title: videoData.title || '未知标题',
+      videoUrl: cloudUrl,
+      title: fileName || '上传视频',
       processTime: `${Date.now() - timestamp}ms`,
-      fileSize: await getFileSize(processedPath),
+      originalSize: fileSize,
+      processedSize: processedSize,
       expiryTime: timestamp + (CONFIG.EXPIRY_HOURS * 60 * 60 * 1000)
     }
 
   } catch (error) {
-    console.error(`任务 ${taskId} 处理失败:`, error)
+    console.error(`上传视频处理失败 ${taskId}:`, error)
     throw error
   }
 }
@@ -1121,6 +1188,129 @@ async function removeWatermark(inputPath, taskId) {
       }
     }
   });
+}
+
+/**
+/**
+ * 从云存储下载文件到本地（优化版本）
+ * @param {string} fileId - 云存储文件ID
+ * @param {string} taskId - 任务ID
+ * @returns {string} 本地文件路径
+ */
+async function downloadFromCloud(fileId, taskId) {
+  const localPath = path.join(CONFIG.TEMP_DIR, `${taskId}_uploaded.mp4`)
+
+  console.log(`从云存储下载文件: ${fileId}`)
+  console.log(`目标本地路径: ${localPath}`)
+
+  try {
+    // 方法1: 使用getTempFileURL获取下载链接，然后用axios下载（更快）
+    console.log('尝试方法1: 获取临时下载链接')
+    
+    const tempUrlResult = await cloud.getTempFileURL({
+      fileList: [fileId]
+    })
+
+    if (tempUrlResult.fileList && tempUrlResult.fileList.length > 0) {
+      const downloadUrl = tempUrlResult.fileList[0].tempFileURL
+      console.log(`获取到临时下载链接: ${downloadUrl.substring(0, 100)}...`)
+
+      // 使用axios流式下载，支持进度监控
+      const response = await axios({
+        method: 'GET',
+        url: downloadUrl,
+        responseType: 'stream',
+        timeout: 90000, // 90秒超时
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        }
+      })
+
+      console.log(`开始流式下载，响应状态: ${response.status}`)
+      console.log(`Content-Length: ${response.headers['content-length'] || '未知'}`)
+
+      const writer = fs.createWriteStream(localPath)
+      let downloadedBytes = 0
+      const totalBytes = parseInt(response.headers['content-length']) || 0
+
+      // 监控下载进度
+      response.data.on('data', (chunk) => {
+        downloadedBytes += chunk.length
+        if (totalBytes > 0) {
+          const progress = ((downloadedBytes / totalBytes) * 100).toFixed(1)
+          console.log(`下载进度: ${progress}% (${downloadedBytes}/${totalBytes} 字节)`)
+        } else {
+          console.log(`已下载: ${downloadedBytes} 字节`)
+        }
+      })
+
+      response.data.pipe(writer)
+
+      return new Promise((resolve, reject) => {
+        writer.on('finish', () => {
+          console.log(`方法1下载完成: ${localPath}`)
+          
+          // 验证文件
+          try {
+            const stats = fs.statSync(localPath)
+            console.log(`下载文件大小: ${stats.size} 字节`)
+            
+            if (stats.size === 0) {
+              throw new Error('下载的文件大小为0')
+            }
+            
+            resolve(localPath)
+          } catch (err) {
+            reject(new Error(`文件验证失败: ${err.message}`))
+          }
+        })
+
+        writer.on('error', (err) => {
+          console.error('写入文件失败:', err)
+          reject(err)
+        })
+
+        // 设置下载超时
+        const downloadTimeout = setTimeout(() => {
+          writer.destroy()
+          reject(new Error('下载超时（90秒）'))
+        }, 90000)
+
+        writer.on('finish', () => {
+          clearTimeout(downloadTimeout)
+        })
+      })
+    } else {
+      throw new Error('无法获取临时下载链接')
+    }
+
+  } catch (error) {
+    console.error('方法1失败，尝试方法2:', error.message)
+
+    try {
+      // 方法2: 使用原始的cloud.downloadFile API（备用方案）
+      console.log('尝试方法2: 使用cloud.downloadFile API')
+      
+      const result = await Promise.race([
+        cloud.downloadFile({ fileID: fileId }),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('cloud.downloadFile超时（60秒）')), 60000)
+        )
+      ])
+
+      console.log(`方法2下载完成，文件大小: ${result.fileContent.length} 字节`)
+
+      // 将文件内容写入本地
+      fs.writeFileSync(localPath, result.fileContent)
+
+      console.log(`方法2文件写入完成: ${localPath}`)
+      return localPath
+
+    } catch (secondError) {
+      console.error('方法2也失败:', secondError.message)
+      throw new Error(`所有下载方法都失败。方法1: ${error.message}; 方法2: ${secondError.message}`)
+    }
+  }
 }
 
 /**

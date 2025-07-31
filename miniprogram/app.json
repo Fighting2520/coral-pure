@@ -11,22 +11,6 @@
     "navigationBarTextStyle": "white",
     "backgroundColor": "#f5f5f5"
   },
-  "tabBar": {
-    "color": "#666666",
-    "selectedColor": "#2196F3",
-    "backgroundColor": "#ffffff",
-    "borderStyle": "black",
-    "list": [
-      {
-        "pagePath": "pages/index/index",
-        "text": "去水印"
-      },
-      {
-        "pagePath": "pages/about/about",
-        "text": "关于"
-      }
-    ]
-  },
   "cloud": true,
   "style": "v2",
   "sitemapLocation": "sitemap.json"

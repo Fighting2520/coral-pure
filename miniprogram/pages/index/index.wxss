@@ -59,58 +59,149 @@
   color: #666;
 }
 
-/* 输入区域 */
-.input-section {
-  margin-bottom: 60rpx;
+/* 功能选择区域 */
+.function-section {
+  margin-bottom: 40rpx;
 }
 
-.input-wrapper {
-  position: relative;
-  margin-bottom: 20rpx;
-}
-
-.url-input {
-  width: 100%;
-  height: 100rpx;
+.function-tabs {
+  display: flex;
   background: white;
   border-radius: 15rpx;
-  padding: 0 180rpx 0 30rpx;
-  font-size: 28rpx;
+  padding: 8rpx;
   box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.1);
 }
 
-.input-actions {
-  position: absolute;
-  right: 0;
-  top: 0;
-  height: 100%;
+.tab-item {
+  flex: 1;
+  height: 80rpx;
   display: flex;
-  align-items: center;
-}
-
-.clear-btn {
-  width: 80rpx;
-  height: 100%;
-  display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: #999;
+  border-radius: 10rpx;
+  transition: all 0.3s;
+}
+
+.tab-item.active {
+  background: linear-gradient(45deg, #2196F3, #1976D2);
+  color: white;
+}
+
+.tab-icon {
   font-size: 32rpx;
+  margin-bottom: 5rpx;
 }
 
-.paste-btn {
-  width: 100rpx;
-  height: 60rpx;
-  background: #f5f5f5;
-  border-radius: 30rpx;
-  margin-right: 20rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.tab-text {
+  font-size: 24rpx;
+}
+
+/* 上传视频区域 */
+.upload-section {
+  margin-bottom: 60rpx;
+}
+
+.upload-area {
+  background: white;
+  border-radius: 15rpx;
+  margin-bottom: 30rpx;
+  overflow: hidden;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.1);
+}
+
+.upload-content {
+  padding: 80rpx 40rpx;
+  text-align: center;
+  border: 4rpx dashed #ddd;
+  margin: 20rpx;
+  border-radius: 15rpx;
+}
+
+.upload-icon {
+  font-size: 100rpx;
+  margin-bottom: 20rpx;
+}
+
+.upload-text {
+  font-size: 32rpx;
+  font-weight: bold;
+  margin-bottom: 10rpx;
+}
+
+.upload-tips {
   font-size: 24rpx;
   color: #666;
 }
 
+.video-preview {
+  padding: 20rpx;
+}
+
+.preview-video {
+  width: 100%;
+  height: 400rpx;
+  border-radius: 10rpx;
+}
+
+.video-info {
+  padding: 20rpx 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.video-name {
+  font-size: 28rpx;
+  color: #333;
+}
+
+.video-size {
+  font-size: 24rpx;
+  color: #666;
+}
+
+/* 链接解析区域 */
+.link-section {
+  margin-bottom: 60rpx;
+}
+
+.coming-soon {
+  background: white;
+  border-radius: 15rpx;
+  padding: 80rpx 40rpx;
+  text-align: center;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.1);
+}
+
+.coming-icon {
+  font-size: 100rpx;
+  margin-bottom: 30rpx;
+}
+
+.coming-title {
+  font-size: 36rpx;
+  font-weight: bold;
+  margin-bottom: 20rpx;
+  color: #333;
+}
+
+.coming-desc {
+  font-size: 28rpx;
+  color: #666;
+  line-height: 1.6;
+  margin-bottom: 20rpx;
+}
+
+.coming-note {
+  font-size: 24rpx;
+  color: #2196F3;
+  background: rgba(33, 150, 243, 0.1);
+  padding: 20rpx;
+  border-radius: 10rpx;
+}
+
+/* 处理按钮 */
 .process-btn {
   width: 100%;
   height: 90rpx;
@@ -123,6 +214,10 @@
   align-items: center;
   justify-content: center;
   border: none;
+}
+
+.process-btn:disabled {
+  background: #ccc;
 }
 
 .process-btn.loading {
@@ -285,4 +380,43 @@
   font-size: 24rpx;
   color: #666;
   line-height: 1.6;
+}
+
+/* 进度显示 */
+.progress-section {
+  margin-bottom: 30rpx;
+  background: white;
+  border-radius: 15rpx;
+  padding: 30rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.1);
+}
+
+.progress-bar {
+  width: 100%;
+  height: 12rpx;
+  background: #f0f0f0;
+  border-radius: 6rpx;
+  overflow: hidden;
+  margin-bottom: 20rpx;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(45deg, #2196F3, #1976D2);
+  border-radius: 6rpx;
+  transition: width 0.3s ease;
+  animation: progress-shine 2s infinite;
+}
+
+.progress-text {
+  font-size: 28rpx;
+  color: #333;
+  text-align: center;
+  font-weight: bold;
+}
+
+@keyframes progress-shine {
+  0% { box-shadow: 0 0 5rpx rgba(33, 150, 243, 0.3); }
+  50% { box-shadow: 0 0 20rpx rgba(33, 150, 243, 0.6); }
+  100% { box-shadow: 0 0 5rpx rgba(33, 150, 243, 0.3); }
 }

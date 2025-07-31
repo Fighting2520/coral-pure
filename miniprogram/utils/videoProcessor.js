@@ -68,39 +68,110 @@ class VideoProcessor {
   }
 
   /**
-   * 获取模拟处理结果（游客模式使用）
-   * @param {Object} videoInfo - 视频信息
-   * @returns {Object} 模拟结果
+   * 处理视频去水印
+   * @param {Object} videoInfo 视频信息
+   * @returns {Promise<Object>} 处理结果
    */
-  getMockProcessResult(videoInfo) {
-    return {
-      success: true,
-      downloadUrl: 'https://example.com/mock-video.mp4',
-      originalUrl: videoInfo.url,
-      processTime: '250ms',
-      fileSize: '5.2MB',
-      expiryTime: Date.now() + this.tempFileExpiry,
-      warning: '游客模式下无法实际处理视频，这是模拟数据。请部署到真实环境使用。',
-      isMockData: true
+  static async processVideo(videoInfo) {
+    try {
+      console.log('开始处理视频:', videoInfo)
+      
+      // 调用云函数处理视频
+      const result = await wx.cloud.callFunction({
+        name: 'videoProcessor',
+        data: {
+          action: 'removeWatermark',
+          videoInfo: videoInfo
+        }
+      })
+      
+      if (result.result.success) {
+        return {
+          success: true,
+          videoUrl: result.result.videoUrl,
+          title: videoInfo.title,
+          platform: videoInfo.platform,
+          processTime: result.result.processTime
+        }
+      } else {
+        throw new Error(result.result.error || '处理失败')
+      }
+      
+    } catch (error) {
+      console.error('视频处理失败:', error)
+      throw new Error(error.message || '视频处理失败')
     }
   }
 
   /**
-   * 验证视频信息
-   * @param {Object} videoInfo - 视频信息
+   * 处理上传的视频文件
+   * @param {Object} videoFile 视频文件信息
+   * @returns {Promise<Object>} 处理结果
    */
-  validateVideoInfo(videoInfo) {
-    if (!videoInfo || !videoInfo.url) {
-      throw new Error('缺少视频链接')
+  static async processUploadedVideo(videoFile) {
+    try {
+      console.log('开始处理上传的视频:', videoFile)
+      
+      // 1. 上传视频到云存储
+      const uploadResult = await this.uploadVideoToCloud(videoFile)
+      
+      // 2. 调用云函数处理视频
+      const result = await wx.cloud.callFunction({
+        name: 'videoProcessor',
+        data: {
+          action: 'processUploadedVideo',
+          fileId: uploadResult.fileID,
+          fileName: videoFile.name,
+          fileSize: videoFile.size
+        }
+      })
+      
+      if (result.result.success) {
+        return {
+          success: true,
+          videoUrl: result.result.videoUrl,
+          title: videoFile.name,
+          platform: '本地上传',
+          processTime: result.result.processTime,
+          originalSize: videoFile.size,
+          processedSize: result.result.processedSize
+        }
+      } else {
+        throw new Error(result.result.error || '处理失败')
+      }
+      
+    } catch (error) {
+      console.error('上传视频处理失败:', error)
+      throw new Error(error.message || '视频处理失败')
     }
+  }
 
-    if (!videoInfo.platform) {
-      throw new Error('无法识别视频平台')
-    }
-
-    // 检查文件大小限制
-    if (videoInfo.size && videoInfo.size > this.maxFileSize) {
-      throw new Error('视频文件过大，请选择小于100MB的视频')
+  /**
+   * 上传视频到云存储
+   * @param {Object} videoFile 视频文件信息
+   * @returns {Promise<Object>} 上传结果
+   */
+  static async uploadVideoToCloud(videoFile) {
+    try {
+      const cloudPath = `videos/upload_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.mp4`
+      
+      const result = await wx.cloud.uploadFile({
+        cloudPath: cloudPath,
+        filePath: videoFile.tempFilePath,
+        success: (res) => {
+          console.log('视频上传成功:', res)
+        },
+        fail: (error) => {
+          console.error('视频上传失败:', error)
+          throw new Error('视频上传失败')
+        }
+      })
+      
+      return result
+      
+    } catch (error) {
+      console.error('上传到云存储失败:', error)
+      throw new Error('视频上传失败，请检查网络连接')
     }
   }
 
